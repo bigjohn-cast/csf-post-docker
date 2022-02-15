@@ -89,24 +89,26 @@ if [ `echo ${containers} | wc -c` -gt "1" ]; then
 
         if [ `echo ${rules} | wc -c` -gt "1" ]; then
             for rule in ${rules}; do
-                src=`echo '${rule}' | awk -F'->' '{ print $2 }'`
-                dst=`echo '${rule}' | awk -F'->' '{ print $1 }'`
+                src=`echo "${rule}" | awk -F'->' '{ print $2 }'`
+                dst=`echo "${rule}" | awk -F'->' '{ print $1 }'`
 
-                src_ip=`echo '${src}' | awk -F':' '{ print $1 }'`
-                src_port=`echo '${src}' | awk -F':' '{ print $2 }'`
+                src_ip=`echo "${src}" | awk -F':' '{ print $1 }'`
+                src_port=`echo "${src}" | awk -F':' '{ print $2 }'`
 
-                dst_port=`echo '${dst}' | awk -F'/' '{ print $1 }'`
-                dst_proto=`echo '${dst}' | awk -F'/' '{ print $2 }'`
+                dst_port=`echo "${dst}" | awk -F'/' '{ print $1 }'`
+                dst_proto=`echo "${dst}" | awk -F'/' '{ print $2 }'`
+                
+                if [ `echo "${src_ip}" | wc -c` -gt "1" ]; then
+                    /sbin/iptables -A DOCKER -d ${ipaddr}/32 ! -i ${DOCKER_NET_INT} -o ${DOCKER_NET_INT} -p ${dst_proto} -m ${dst_proto} --dport ${dst_port} -j ACCEPT
 
-                /sbin/iptables -A DOCKER -d ${ipaddr}/32 ! -i ${DOCKER_NET_INT} -o ${DOCKER_NET_INT} -p ${dst_proto} -m ${dst_proto} --dport ${dst_port} -j ACCEPT
+                    /sbin/iptables -t nat -A POSTROUTING -s ${ipaddr}/32 -d ${ipaddr}/32 -p ${dst_proto} -m ${dst_proto} --dport ${dst_port} -j MASQUERADE
 
-                /sbin/iptables -t nat -A POSTROUTING -s ${ipaddr}/32 -d ${ipaddr}/32 -p ${dst_proto} -m ${dst_proto} --dport ${dst_port} -j MASQUERADE
-
-                iptables_opt_src=""
-                if [ ${src_ip} != "0.0.0.0" ]; then
-                    iptables_opt_src="-d ${src_ip}/32 "
+                    iptables_opt_src=""
+                    if [ ${src_ip} != "0.0.0.0" ]; then
+                        iptables_opt_src="-d ${src_ip}/32 "
+                    fi
+                    /sbin/iptables -t nat -A DOCKER ${iptables_opt_src}! -i ${DOCKER_NET_INT} -p ${dst_proto} -m ${dst_proto} --dport ${src_port} -j DNAT --to-destination ${ipaddr}:${dst_port}
                 fi
-                /sbin/iptables -t nat -A DOCKER ${iptables_opt_src}! -i ${DOCKER_NET_INT} -p ${dst_proto} -m ${dst_proto} --dport ${src_port} -j DNAT --to-destination ${ipaddr}:${dst_port}
             done
         fi
     done
