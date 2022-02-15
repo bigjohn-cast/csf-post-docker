@@ -89,14 +89,14 @@ if [ `echo ${containers} | wc -c` -gt "1" ]; then
 
         if [ `echo ${rules} | wc -c` -gt "1" ]; then
             for rule in ${rules}; do
-                src=`echo ${rule} | awk -F'->' '{ print $2 }'`
-                dst=`echo ${rule} | awk -F'->' '{ print $1 }'`
+                src=`echo '${rule}' | awk -F'->' '{ print $2 }'`
+                dst=`echo '${rule}' | awk -F'->' '{ print $1 }'`
 
-                src_ip=`echo ${src} | awk -F':' '{ print $1 }'`
-                src_port=`echo ${src} | awk -F':' '{ print $2 }'`
+                src_ip=`echo '${src}' | awk -F':' '{ print $1 }'`
+                src_port=`echo '${src}' | awk -F':' '{ print $2 }'`
 
-                dst_port=`echo ${dst} | awk -F'/' '{ print $1 }'`
-                dst_proto=`echo ${dst} | awk -F'/' '{ print $2 }'`
+                dst_port=`echo '${dst}' | awk -F'/' '{ print $1 }'`
+                dst_proto=`echo '${dst}' | awk -F'/' '{ print $2 }'`
 
                 /sbin/iptables -A DOCKER -d ${ipaddr}/32 ! -i ${DOCKER_NET_INT} -o ${DOCKER_NET_INT} -p ${dst_proto} -m ${dst_proto} --dport ${dst_port} -j ACCEPT
 
